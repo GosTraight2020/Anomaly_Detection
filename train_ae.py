@@ -17,7 +17,7 @@ from utils import evaluation
 def train():
     data_shape = [3, 128, 128]
     model = AutoEncoder('landslide', data_shape, C_lr=1e-4, G_lr=1e-4, summary_path='./summary/', checkpoint_path='./checkpoints')
-    model.summary_writer.add_graph(model.ae, torch.randn(128, 3, 128, 128))
+    # model.summary_writer.add_graph(model.ae, torch.randn(128, 3, 128, 128))
     train_dataset = LandslideDataSet(train=True)
     eval_dataset = LandslideDataSet(train=False)
     train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, num_workers=0, shuffle=True)
@@ -30,7 +30,8 @@ def train():
     aucs = []
     for epoch in range(arg.num_epochs):
         model.ae.encoder.train()
-        model.ae.decoder.train()
+        model.ae.decoder.train()    
+        model.critic.train()
         for i, (images, _, _) in enumerate(train_loader):
             step = num_per_epoch * epoch + i
             images = images.float()
@@ -65,7 +66,8 @@ def train():
                 if auc > best_auc:
                     best_auc = auc
                     model_save_path = os.path.join(model.checkpoint_path, 'model.pth'.format(step))
-                    torch.save(model.ae, model_save_path)
+                    if auc > 0.7:
+                        torch.save(model.ae, model_save_path)
                     log('Best auc: {}'.format(best_auc))
                     log('Model of step {} has been save to {}'.format(step, model_save_path), level=3)
                 else:
